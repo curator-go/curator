@@ -16,15 +16,15 @@ Curator-go users are assumed to know ZooKeeper. A good place to start is [ZooKee
 
 ## Install Curator-go
 
-> $ go get github.com/basvanbeek/curator-go
+> $ go get github.com/curator-go/curator
 
 ## Using Curator
 
-The Curator-go are available from [github.com](https://github.com/basvanbeek/curator-go). You can easily include Curator-go into your code.
+Curator-go is available from [github.com](https://github.com/curator-go/curator). You can easily include Curator-go into your code.
 
 ```
 import (
-	"github.com/basvanbeek/curator-go"
+	"github.com/curator-go/curator"
 )
 ```
 

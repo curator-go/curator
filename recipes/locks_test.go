@@ -3,7 +3,7 @@ package recipes
 import (
 	"testing"
 
-	"github.com/basvanbeek/curator-go"
+	"github.com/curator-go/curator"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

@@ -3,7 +3,7 @@ package framework
 import (
 	"time"
 
-	"github.com/basvanbeek/curator-go"
+	"github.com/curator-go/curator"
 )
 
 func CreateSimple(connString string) curator.CuratorFramework {

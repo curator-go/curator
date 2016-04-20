@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/basvanbeek/curator-go"
+	"github.com/curator-go/curator"
 	"github.com/samuel/go-zookeeper/zk"
 )
 

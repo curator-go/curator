@@ -19,7 +19,7 @@ The Curator Framework is a high-level API that greatly simplifies using ZooKeepe
 
 CuratorFrameworks are allocated using the CuratorFrameworkBuilder which provides both factory methods and a builder for creating instances. IMPORTANT: CuratorFramework instances are fully thread-safe. You should share one CuratorFramework per ZooKeeper cluster in your application.
 
-The factory methods [NewClient()](http://godoc.org/github.com/basvanbeek/curator-go#NewClient) provide a simplified way of creating an instance. The Builder gives control over all parameters. Once you have a CuratorFramework instance, you must call the [Start()](http://godoc.org/github.com/basvanbeek/curator-go#CuratorFramework.Start) method. At the end of your application, you should call [Close()](http://godoc.org/github.com/basvanbeek/curator-go#CuratorFramework.Close).
+The factory methods [NewClient()](http://godoc.org/github.com/curator-go/curator#NewClient) provide a simplified way of creating an instance. The Builder gives control over all parameters. Once you have a CuratorFramework instance, you must call the [Start()](http://godoc.org/github.com/curator-go/curator#CuratorFramework.Start) method. At the end of your application, you should call [Close()](http://godoc.org/github.com/curator-go/curator#CuratorFramework.Close).
 
 ## CuratorFramework API
 
@@ -34,19 +34,19 @@ client.GetData().Watched().InBackground().ForPath("/test");
 
 ## Methods
 
-- [Create()](http://godoc.org/github.com/basvanbeek/curator-go#CuratorFramework.Create)	Begins a create operation. Call additional methods (mode or background) and finalize the operation by calling ForPath() or ForPathWithData()
-- [Delete()](http://godoc.org/github.com/basvanbeek/curator-go#CuratorFramework.Delete)	Begins a delete operation. Call additional methods (version or background) and finalize the operation by calling ForPath()
-- [CheckExists()](http://godoc.org/github.com/basvanbeek/curator-go#CuratorFramework.CheckExists)	Begins an operation to check that a ZNode exists. Call additional methods (watch or background) and finalize the operation by calling ForPath()
-- [GetData()](http://godoc.org/github.com/basvanbeek/curator-go#CuratorFramework.GetData)	Begins an operation to get a ZNode's data. Call additional methods (watch, background or get stat) and finalize the operation by calling ForPath()
-- [SetData()](http://godoc.org/github.com/basvanbeek/curator-go#CuratorFramework.SetData)	Begins an operation to set a ZNode's data. Call additional methods (version or background) and finalize the operation by calling ForPath() or ForPathWithData()
-- [GetChildren()](http://godoc.org/github.com/basvanbeek/curator-go#CuratorFramework.GetChildren)	Begins an operation to get a ZNode's list of children ZNodes. Call additional methods (watch, background or get stat) and finalize the operation by calling ForPath()
-- [InTransaction()](http://godoc.org/github.com/basvanbeek/curator-go#CuratorFramework.InTransaction)	Begins an atomic ZooKeeper transaction. Combine Create, SetData, Check, and/or Delete operations and then Commit() as a unit.
+- [Create()](http://godoc.org/github.com/curator-go/curator#CuratorFramework.Create)	Begins a create operation. Call additional methods (mode or background) and finalize the operation by calling ForPath() or ForPathWithData()
+- [Delete()](http://godoc.org/github.com/curator-go/curator#CuratorFramework.Delete)	Begins a delete operation. Call additional methods (version or background) and finalize the operation by calling ForPath()
+- [CheckExists()](http://godoc.org/github.com/curator-go/curator#CuratorFramework.CheckExists)	Begins an operation to check that a ZNode exists. Call additional methods (watch or background) and finalize the operation by calling ForPath()
+- [GetData()](http://godoc.org/github.com/curator-go/curator#CuratorFramework.GetData)	Begins an operation to get a ZNode's data. Call additional methods (watch, background or get stat) and finalize the operation by calling ForPath()
+- [SetData()](http://godoc.org/github.com/curator-go/curator#CuratorFramework.SetData)	Begins an operation to set a ZNode's data. Call additional methods (version or background) and finalize the operation by calling ForPath() or ForPathWithData()
+- [GetChildren()](http://godoc.org/github.com/curator-go/curator#CuratorFramework.GetChildren)	Begins an operation to get a ZNode's list of children ZNodes. Call additional methods (watch, background or get stat) and finalize the operation by calling ForPath()
+- [InTransaction()](http://godoc.org/github.com/curator-go/curator#CuratorFramework.InTransaction)	Begins an atomic ZooKeeper transaction. Combine Create, SetData, Check, and/or Delete operations and then Commit() as a unit.
 
 ## Notifications
 
 Notifications for background operations and watches are published via the ClientListener interface. You register listeners with the CuratorFramework instance using the addListener() method. The listener implements two methods:
 
-- [EventReceived()](http://godoc.org/github.com/basvanbeek/curator-go/#CuratorListener)	A background operation has completed or a watch has triggered. Examine the given event for details
+- [EventReceived()](http://godoc.org/github.com/curator-go/curator/#CuratorListener)	A background operation has completed or a watch has triggered. Examine the given event for details
 
 ## CuratorEvent
 
