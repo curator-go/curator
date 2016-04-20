@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/flier/curator.go"
+	"github.com/basvanbeek/curator-go"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/samuel/go-zookeeper/zk"
 )

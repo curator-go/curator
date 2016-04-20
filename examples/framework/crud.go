@@ -1,7 +1,7 @@
 package framework
 
 import (
-	"github.com/flier/curator.go"
+	"github.com/basvanbeek/curator-go"
 	"github.com/samuel/go-zookeeper/zk"
 )
 

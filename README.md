@@ -4,27 +4,27 @@ Curator n ˈkyoor͝ˌātər: a keeper or custodian of a museum or other collecti
 
 ![curator](http://curator.apache.org/images/ph-quote.png "Patrick Hunt Quote")
 
-## What is curator.go?
+## What is curator-go?
 
-Curator.go is a Golang porting for Curator, which base on the [go-zookeeper](https://github.com/samuel/go-zookeeper/).
+Curator-go is a Golang porting for Curator, which base on the [go-zookeeper](https://github.com/samuel/go-zookeeper/).
 
 # Getting Started
 
 ## Learn ZooKeeper
 
-Curator.go users are assumed to know ZooKeeper. A good place to start is [ZooKeeper Getting Started Guide](http://zookeeper.apache.org/doc/trunk/zookeeperStarted.html)
+Curator-go users are assumed to know ZooKeeper. A good place to start is [ZooKeeper Getting Started Guide](http://zookeeper.apache.org/doc/trunk/zookeeperStarted.html)
 
-## Install Curator.go
+## Install Curator-go
 
-> $ go get github.com/flier/curator.go
+> $ go get github.com/basvanbeek/curator-go
 
 ## Using Curator
 
-The Curator.go are available from [github.com](https://github.com/flier/curator.go). You can easily include Curator.go into your code.
+The Curator-go are available from [github.com](https://github.com/basvanbeek/curator-go). You can easily include Curator-go into your code.
 
-``` 
+```
 import (
-	"github.com/flier/curator.go"
+	"github.com/basvanbeek/curator-go"
 )
 ```
 
@@ -45,7 +45,7 @@ retryPolicy := curator.NewExponentialBackoffRetry(time.Second, 3, 15*time.Second
 client := curator.NewClient(connString, retryPolicy)
 
 client.Start()
-defer client.Close()	
+defer client.Close()
 ```
 
 The client must be started (and closed when no longer needed).
@@ -66,7 +66,7 @@ The benefit here is that Curator manages the ZooKeeper connection and will retry
 ```
 lock := curator.NewInterProcessMutex(client, lockPath)
 
-if ( lock.Acquire(maxWait, waitUnit) ) 
+if ( lock.Acquire(maxWait, waitUnit) )
 {
     defer lock.Release()
 
@@ -91,7 +91,7 @@ selector.Start()
 # Examples
 This module contains example usages of various Curator features. Each directory in the module is a separate example.
 
-- [leader](examples/leader/) Example leader selector code 
+- [leader](examples/leader/) Example leader selector code
 - [cache](examples/cache/) Example PathChildrenCache usage
 - [locking](examples/locking/) Example of using InterProcessMutex
 - [discovery](examples/discovery/) Example usage of the Curator's ServiceDiscovery

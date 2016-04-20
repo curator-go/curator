@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/fanliao/go-promise"
-	"github.com/flier/curator.go"
+	"github.com/basvanbeek/curator-go"
 )
 
 // Utility class to allow execution of logic once a ZooKeeper connection becomes available.

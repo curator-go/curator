@@ -1,24 +1,24 @@
 /*
-Curator.go is a Golang porting for Curator, make it easy to access Zookeeper
+Curator-go is a Golang porting for Curator, make it easy to access Zookeeper
 
 
 Learn ZooKeeper
 
 
-Curator.go users are assumed to know ZooKeeper. A good place to start is http://zookeeper.apache.org/doc/trunk/zookeeperStarted.html
+Curator-go users are assumed to know ZooKeeper. A good place to start is http://zookeeper.apache.org/doc/trunk/zookeeperStarted.html
 
 
 Using Curator
 
 
-The Curator.go are available from github.com.
+The Curator-go are available from github.com.
 
-	$ go get github.com/flier/curator.go
+	$ go get github.com/basvanbeek/curator-go
 
-You can easily include Curator.go into your code.
+You can easily include Curator-go into your code.
 
 	import (
-	    "github.com/flier/curator.go"
+	    "github.com/basvanbeek/curator-go"
 	)
 
 
