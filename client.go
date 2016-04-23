@@ -2,7 +2,9 @@ package curator
 
 import (
 	"errors"
+	"fmt"
 	"log"
+	"net"
 	"strings"
 	"time"
 
@@ -87,6 +89,7 @@ type DefaultZookeeperDialer struct {
 }
 
 func (d *DefaultZookeeperDialer) Dial(connString string, sessionTimeout time.Duration, canBeReadOnly bool) (ZookeeperConnection, <-chan zk.Event, error) {
+	fmt.Printf("Dialing: %s, %+v, %+v", connString, sessionTimeout, d.Dialer)
 	return zk.ConnectWithDialer(strings.Split(connString, ","), sessionTimeout, d.Dialer)
 }
 
@@ -133,7 +136,7 @@ func NewCuratorZookeeperClient(zookeeperDialer ZookeeperDialer, ensembleProvider
 	}
 
 	if zookeeperDialer == nil {
-		zookeeperDialer = &DefaultZookeeperDialer{}
+		zookeeperDialer = &DefaultZookeeperDialer{Dialer: net.DialTimeout}
 	}
 
 	dialer := NewZookeeperDialer(func(connString string, sessionTimeout time.Duration, canBeReadOnly bool) (conn ZookeeperConnection, events <-chan zk.Event, err error) {
