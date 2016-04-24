@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -148,7 +149,7 @@ func newConnectionState(zookeeperDialer ZookeeperDialer, ensembleProvider Ensemb
 	}
 
 	if zookeeperDialer == nil {
-		zookeeperDialer = &DefaultZookeeperDialer{}
+		zookeeperDialer = &DefaultZookeeperDialer{Dialer: net.DialTimeout}
 	}
 
 	s.zooKeeper = &handleHolder{
