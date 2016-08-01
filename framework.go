@@ -194,7 +194,7 @@ type curatorFramework struct {
 func newCuratorFramework(b *CuratorFrameworkBuilder) *curatorFramework {
 	c := &curatorFramework{
 		listeners:               &curatorListenerContainer{},
-		unhandledErrorListeners: &unhandledErrorListenerContainer{},
+		unhandledErrorListeners: &UnhandledErrorListenerContainer{},
 		defaultData:             b.DefaultData,
 		retryPolicy:             b.RetryPolicy,
 		compressionProvider:     b.CompressionProvider,

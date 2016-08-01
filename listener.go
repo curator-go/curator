@@ -185,14 +185,14 @@ func (c *curatorListenerContainer) RemoveListener(listener CuratorListener) {
 	c.Remove(listener)
 }
 
-type unhandledErrorListenerContainer struct {
+type UnhandledErrorListenerContainer struct {
 	ListenerContainer
 }
 
-func (c *unhandledErrorListenerContainer) AddListener(listener UnhandledErrorListener) {
+func (c *UnhandledErrorListenerContainer) AddListener(listener UnhandledErrorListener) {
 	c.Add(listener)
 }
 
-func (c *unhandledErrorListenerContainer) RemoveListener(listener UnhandledErrorListener) {
+func (c *UnhandledErrorListenerContainer) RemoveListener(listener UnhandledErrorListener) {
 	c.Remove(listener)
 }
