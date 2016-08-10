@@ -12,7 +12,7 @@ import (
 
 // NodeState represents state of TreeNode.
 // TODO: make this a private type?
-type NodeState int
+type NodeState int32
 
 // Available node states.
 const (
@@ -107,8 +107,7 @@ func (tn *TreeNode) wasDeleted() {
 		return
 	}
 
-	oldState := tn.state
-	tn.state = NodeStateDEAD
+	oldState := NodeState(atomic.SwapInt32((*int32)(&tn.state), int32(NodeStateDEAD)))
 	if oldState == NodeStateLIVE {
 		tn.tree.publishEvent(TreeCacheEventNodeRemoved, oldChildData)
 	}
@@ -158,9 +157,10 @@ func (tn *TreeNode) processResult(client curator.CuratorFramework, evt curator.C
 			tn.tree.handleException(errors.New("unexpected EXISTS on non-root node"))
 		}
 		if evt.Err() == nil {
-			if tn.state == NodeStateDEAD {
-				tn.state = NodeStatePENDING
-			}
+			atomic.CompareAndSwapInt32(
+				(*int32)(&tn.state),
+				int32(NodeStateDEAD),
+				int32(NodeStatePENDING))
 			tn.wasCreated()
 		}
 	case curator.CHILDREN:
@@ -207,19 +207,19 @@ func (tn *TreeNode) processResult(client curator.CuratorFramework, evt curator.C
 				tn.childData = NewChildData(evt.Path(), newStat, nil)
 			}
 
-			oldState := tn.state
-			tn.state = NodeStateLIVE
-
 			var added bool
 			if tn.parent == nil {
 				// We're the singleton root.
-				added = oldState != NodeStateLIVE
+				added = NodeState(atomic.SwapInt32((*int32)(&tn.state),
+					int32(NodeStateLIVE))) != NodeStateLIVE
 			} else {
-				added = oldState == NodeStatePENDING
+				added = atomic.CompareAndSwapInt32((*int32)(&tn.state),
+					int32(NodeStatePENDING),
+					int32(NodeStateLIVE))
 				if !added {
 					// Ordinary nodes are not allowed to transition from dead -> live;
 					// make sure this isn't a delayed response that came in after death.
-					if oldState != NodeStateLIVE {
+					if tn.state != NodeStateLIVE {
 						return nil
 					}
 				}
