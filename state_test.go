@@ -174,7 +174,7 @@ func (s *ConnectionStateTestSuite) TestConnectionTimeout() {
 	instanceIndex := s.state.InstanceIndex()
 
 	// force to connect timeout
-	s.state.connectionStart = time.Now().Add(-s.connectionTimeout * 2)
+	s.state.connectionStart.Store(time.Now().Add(-s.connectionTimeout * 2))
 
 	s.tracer.On("AddCount", "connections-timed-out", 1).Return().Once()
 
@@ -196,7 +196,7 @@ func (s *ConnectionStateTestSuite) TestSessionTimeout() {
 	instanceIndex := s.state.InstanceIndex()
 
 	// force to session timeout
-	s.state.connectionStart = time.Now().Add(-s.sessionTimeout * 2)
+	s.state.connectionStart.Store(time.Now().Add(-s.sessionTimeout * 2))
 
 	s.tracer.On("AddCount", "session-timed-out", 1).Return().Once()
 

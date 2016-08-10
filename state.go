@@ -130,7 +130,7 @@ type connectionState struct {
 	parentWatchers    *Watchers
 	zooKeeper         *handleHolder
 	instanceIndex     int64
-	connectionStart   time.Time
+	connectionStart   *atomic.Value
 	isConnected       AtomicBool
 	backgroundErrors  chan error
 }
@@ -144,9 +144,10 @@ func newConnectionState(zookeeperDialer ZookeeperDialer, ensembleProvider Ensemb
 		connectionTimeout: connectionTimeout,
 		tracer:            tracer,
 		parentWatchers:    NewWatchers(),
-		connectionStart:   time.Now(),
+		connectionStart:   new(atomic.Value),
 		backgroundErrors:  make(chan error, MAX_BACKGROUND_ERRORS),
 	}
+	s.connectionStart.Store(time.Now())
 
 	if zookeeperDialer == nil {
 		zookeeperDialer = &DefaultZookeeperDialer{Dialer: net.DialTimeout}
@@ -238,7 +239,7 @@ func (s *connectionState) checkTimeout() error {
 		maxTimeout = s.connectionTimeout
 	}
 
-	elapsed := time.Since(s.connectionStart)
+	elapsed := time.Since(s.connectionStart.Load().(time.Time))
 
 	if elapsed >= minTimeout {
 		if s.zooKeeper.hasNewConnectionString() {
@@ -279,7 +280,7 @@ func (s *connectionState) process(event *zk.Event) {
 
 		if newIsConnected := s.checkState(event.State, event.Err, wasConnected); newIsConnected != wasConnected {
 			s.isConnected.Set(newIsConnected)
-			s.connectionStart = time.Now()
+			s.connectionStart.Store(time.Now())
 		}
 	}
 }
