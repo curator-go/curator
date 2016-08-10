@@ -99,6 +99,7 @@ func (tn *TreeNode) wasCreated() {
 
 func (tn *TreeNode) wasDeleted() {
 	oldChildData := tn.childData
+	tn.childData = nil
 	for _, child := range tn.children {
 		child.wasDeleted()
 	}
