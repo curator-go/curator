@@ -293,6 +293,6 @@ func (tc *TreeCache) publishEvent(tp TreeCacheEventType, data *ChildData) {
 	if tc.state.Value() != curator.STOPPED {
 		evt := TreeCacheEvent{Type: tp, Data: data}
 		tc.logger.Debugf("publishEvent: %v", evt)
-		tc.callListeners(evt)
+		go tc.callListeners(evt)
 	}
 }
