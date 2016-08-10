@@ -8,6 +8,10 @@ import (
 	"github.com/tevino/abool"
 )
 
+func TestRace(t *testing.T) {
+	curator.NewClient("127.0.0.1:2181", nil).Start()
+}
+
 func TestSelector(t *testing.T) {
 	// Create tester
 	tt := NewTreeCacheTester(t).Start()

@@ -38,11 +38,11 @@ func (f *zookeeperFactory) GetZookeeperConnection() (ZookeeperConnection, error)
 		return nil, err
 	}
 
+	f.holder.helper = &zookeeperCache{connectString, conn}
+
 	if events != nil {
 		go NewWatchers(f.holder.watcher).Watch(events)
 	}
-
-	f.holder.helper = &zookeeperCache{connectString, conn}
 
 	return conn, err
 }
