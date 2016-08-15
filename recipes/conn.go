@@ -3,8 +3,8 @@ package recipes
 import (
 	"time"
 
-	"github.com/fanliao/go-promise"
 	"github.com/curator-go/curator"
+	"github.com/fanliao/go-promise"
 )
 
 // Utility class to allow execution of logic once a ZooKeeper connection becomes available.
