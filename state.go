@@ -38,7 +38,7 @@ func (f *zookeeperFactory) GetZookeeperConnection() (ZookeeperConnection, error)
 		return nil, err
 	}
 
-	f.holder.helper = &zookeeperCache{connectString, conn}
+	f.holder.SetHelper(&zookeeperCache{connectString, conn})
 
 	if events != nil {
 		go NewWatchers(f.holder.watcher).Watch(events)
@@ -61,41 +61,59 @@ type handleHolder struct {
 	watcher          Watcher
 	sessionTimeout   time.Duration
 	canBeReadOnly    bool
+	sync.RWMutex     // This mutex only protects helper yet
 	helper           zookeeperHelper
 }
 
+// SetHelper sets the inner zookeeperHelper atomically
+func (h *handleHolder) SetHelper(helper zookeeperHelper) {
+	h.Lock()
+	defer h.Unlock()
+	h.helper = helper
+}
+
+// Helper gets the inner zookeeperHelper atomically
+func (h *handleHolder) Helper() zookeeperHelper {
+	h.RLock()
+	defer h.RUnlock()
+	return h.helper
+}
+
 func (h *handleHolder) getConnectionString() string {
-	if h.helper != nil {
-		return h.helper.GetConnectionString()
+	helper := h.Helper()
+	if helper != nil {
+		return helper.GetConnectionString()
 	}
 
 	return ""
 }
 
 func (h *handleHolder) hasNewConnectionString() bool {
-	if h.helper != nil {
-		return h.ensembleProvider.ConnectionString() != h.helper.GetConnectionString()
+	helper := h.Helper()
+	if helper != nil {
+		return h.ensembleProvider.ConnectionString() != helper.GetConnectionString()
 	}
 
 	return false
 }
 
 func (h *handleHolder) getZookeeperConnection() (ZookeeperConnection, error) {
-	if h.helper != nil {
-		return h.helper.GetZookeeperConnection()
+	helper := h.Helper()
+	if helper != nil {
+		return helper.GetZookeeperConnection()
 	}
 
 	return nil, nil
 }
 
 func (h *handleHolder) closeAndClear() error {
-	if _, ok := h.helper.(*zookeeperFactory); ok {
+	if _, ok := h.Helper().(*zookeeperFactory); ok {
 		return nil
 	}
 
 	err := h.internalClose()
 
-	h.helper = nil
+	h.SetHelper(nil)
 
 	return err
 }
@@ -105,13 +123,13 @@ func (h *handleHolder) closeAndReset() error {
 		return err
 	}
 
-	h.helper = &zookeeperFactory{holder: h}
+	h.SetHelper(&zookeeperFactory{holder: h})
 
 	return nil
 }
 
 func (h *handleHolder) internalClose() error {
-	if h.helper != nil {
+	if h.Helper() != nil {
 		if conn, err := h.getZookeeperConnection(); err != nil {
 			return err
 		} else if conn != nil {
