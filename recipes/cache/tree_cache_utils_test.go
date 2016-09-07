@@ -280,9 +280,10 @@ func (ct *CacheTreeTester) findEvent(expectedType TreeCacheEventType, expectedPa
 // AssertDataNotExist asserts given path not exist with nil Data
 func (ct *CacheTreeTester) AssertChildren(path string, expectedChildren ...string) {
 	children, err := ct.cache.CurrentChildren(path)
-	ct.t.Logf("AssertChildren: %s %v = %v %v", path, children, expectedChildren, err)
+	keys := KeysString(children)
+	ct.t.Logf("AssertChildren: %s %v = %v %v", path, keys, expectedChildren, err)
 	Assert(ct.t, err == nil)
-	Assert(ct.t, reflect.DeepEqual(KeysString(children), expectedChildren))
+	Assert(ct.t, reflect.DeepEqual(keys, expectedChildren))
 }
 
 // AssertChildrenEmpty asserts given path exists with zero children
