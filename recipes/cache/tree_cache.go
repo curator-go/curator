@@ -199,7 +199,7 @@ func (tc *TreeCache) findNode(path string) (*TreeNode, error) {
 		if part == "" {
 			continue
 		}
-		next, exists := current.children[part]
+		next, exists := current.FindChild(part)
 		if !exists {
 			return nil, ErrNodeNotFound
 		}
@@ -217,20 +217,22 @@ func (tc *TreeCache) CurrentChildren(fullPath string) (map[string]*ChildData, er
 	if err != nil {
 		return nil, err
 	}
-	if node.state != NodeStateLIVE {
+	if node.state.Load() != NodeStateLIVE {
 		return nil, ErrNodeNotLive
 	}
 
-	m := make(map[string]*ChildData, len(node.children))
-	for child, childNode := range node.children {
+	children := node.Children()
+	m := make(map[string]*ChildData, len(children))
+	for child, childNode := range children {
 		// Double-check liveness after retreiving data.
-		if childNode.childData != nil && childNode.state == NodeStateLIVE {
-			m[child] = childNode.childData
+		childData := childNode.ChildData()
+		if childData != nil && childNode.state.Load() == NodeStateLIVE {
+			m[child] = childData
 		}
 	}
 
 	// Double-check liveness after retreiving children.
-	if node.state != NodeStateLIVE {
+	if node.state.Load() != NodeStateLIVE {
 		return nil, ErrNodeNotLive
 	}
 	return m, nil
@@ -244,11 +246,11 @@ func (tc *TreeCache) CurrentData(fullPath string) (*ChildData, error) {
 	if err != nil {
 		return nil, err
 	}
-	if node.state != NodeStateLIVE {
+	if node.state.Load() != NodeStateLIVE {
 		return nil, ErrNodeNotLive
 	}
 
-	return node.childData, nil
+	return node.ChildData(), nil
 }
 
 // callListeners calls all listeners with given event.

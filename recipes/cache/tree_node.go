@@ -4,25 +4,16 @@ import (
 	"errors"
 	"path"
 	"sort"
+	"sync"
 	"sync/atomic"
 
 	"github.com/curator-go/curator"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
-// NodeState represents state of TreeNode.
-// TODO: make this a private type?
-type NodeState int32
-
-// Available node states.
-const (
-	NodeStatePENDING NodeState = iota
-	NodeStateLIVE
-	NodeStateDEAD
-)
-
 // TreeNode represents a node in a tree of znodes.
 type TreeNode struct {
+	sync.RWMutex
 	tree      *TreeCache
 	state     NodeState
 	parent    *TreeNode
@@ -47,6 +38,49 @@ func NewTreeNode(tree *TreeCache, path string, parent *TreeNode) *TreeNode {
 		children: make(map[string]*TreeNode),
 		depth:    depth,
 	}
+}
+
+// SwapChildData sets ChildData to given value and returns the old ChildData.
+func (tn *TreeNode) SwapChildData(d *ChildData) *ChildData {
+	tn.Lock()
+	defer tn.Unlock()
+	old := tn.childData
+	tn.childData = d
+	return old
+}
+
+// Children returns the children of current node.
+func (tn *TreeNode) Children() map[string]*TreeNode {
+	tn.RLock()
+	defer tn.RUnlock()
+	children := make(map[string]*TreeNode, len(tn.children))
+	for k, v := range tn.children {
+		children[k] = v
+	}
+	return children
+}
+
+// FindChild finds a child of current node by its relative path.
+// NOTE: path should contain no slash.
+func (tn *TreeNode) FindChild(path string) (*TreeNode, bool) {
+	tn.RLock()
+	defer tn.RUnlock()
+	node, ok := tn.children[path]
+	return node, ok
+}
+
+// ChildData returns the ChildData.
+func (tn *TreeNode) ChildData() *ChildData {
+	tn.RLock()
+	defer tn.RUnlock()
+	return tn.childData
+}
+
+// RemoveChild removes child by path.
+func (tn *TreeNode) RemoveChild(path string) {
+	tn.Lock()
+	defer tn.Unlock()
+	delete(tn.children, path)
 }
 
 func (tn *TreeNode) refresh() {
@@ -85,7 +119,7 @@ func (tn *TreeNode) doRefreshData() {
 
 func (tn *TreeNode) wasReconnected() error {
 	tn.refresh()
-	for _, child := range tn.children {
+	for _, child := range tn.Children() {
 		if err := child.wasReconnected(); err != nil {
 			return err
 		}
@@ -98,9 +132,8 @@ func (tn *TreeNode) wasCreated() {
 }
 
 func (tn *TreeNode) wasDeleted() {
-	oldChildData := tn.childData
-	tn.childData = nil
-	for _, child := range tn.children {
+	oldChildData := tn.SwapChildData(nil)
+	for _, child := range tn.Children() {
 		child.wasDeleted()
 	}
 
@@ -108,7 +141,7 @@ func (tn *TreeNode) wasDeleted() {
 		return
 	}
 
-	oldState := NodeState(atomic.SwapInt32((*int32)(&tn.state), int32(NodeStateDEAD)))
+	oldState := tn.state.Swap(NodeStateDEAD)
 	if oldState == NodeStateLIVE {
 		tn.tree.publishEvent(TreeCacheEventNodeRemoved, oldChildData)
 	}
@@ -120,9 +153,7 @@ func (tn *TreeNode) wasDeleted() {
 		).InBackgroundWithCallback(tn.processResult).ForPath(tn.path)
 	} else {
 		// Remove from parent if we're currently a child
-		for child := range tn.parent.children {
-			delete(tn.parent.children, child)
-		}
+		tn.parent.RemoveChild(path.Base(tn.path))
 	}
 }
 
@@ -158,10 +189,7 @@ func (tn *TreeNode) processResult(client curator.CuratorFramework, evt curator.C
 			tn.tree.handleException(errors.New("unexpected EXISTS on non-root node"))
 		}
 		if evt.Err() == nil {
-			atomic.CompareAndSwapInt32(
-				(*int32)(&tn.state),
-				int32(NodeStateDEAD),
-				int32(NodeStatePENDING))
+			tn.state.CompareAndSwap(NodeStateDEAD, NodeStatePENDING)
 			tn.wasCreated()
 		}
 	case curator.CHILDREN:
@@ -169,17 +197,18 @@ func (tn *TreeNode) processResult(client curator.CuratorFramework, evt curator.C
 		case zk.ErrNoNode:
 			tn.wasDeleted()
 		case nil:
+			tn.Lock()
 			oldChildData := tn.childData
 			if oldChildData != nil && oldChildData.Stat().Mzxid == newStat.Mzxid {
 				// Only update stat if mzxid is same, otherwise we might obscure
 				// GET_DATA event updates.
 				tn.childData.SetStat(newStat)
 			}
+			tn.Unlock()
 
 			if len(evt.Children()) == 0 {
 				break
 			}
-
 			// Present new children in sorted order for test determinism.
 			children := sort.StringSlice(evt.Children())
 			sort.Sort(children)
@@ -187,12 +216,14 @@ func (tn *TreeNode) processResult(client curator.CuratorFramework, evt curator.C
 				if accepted := tn.tree.selector.AcceptChild(path.Join(tn.path, child)); !accepted {
 					continue
 				}
+				tn.Lock()
 				if _, exists := tn.children[child]; !exists {
 					fullPath := path.Join(tn.path, child)
 					node := NewTreeNode(tn.tree, fullPath, tn)
 					tn.children[child] = node
 					node.wasCreated()
 				}
+				tn.Unlock()
 			}
 		}
 	case curator.GET_DATA:
@@ -201,26 +232,23 @@ func (tn *TreeNode) processResult(client curator.CuratorFramework, evt curator.C
 			tn.wasDeleted()
 		case nil:
 			newChildData := NewChildData(evt.Path(), newStat, evt.Data())
-			oldChildData := tn.childData
+			oldChildData := tn.ChildData()
 			if tn.tree.cacheData {
-				tn.childData = newChildData
+				tn.SwapChildData(newChildData)
 			} else {
-				tn.childData = NewChildData(evt.Path(), newStat, nil)
+				tn.SwapChildData(NewChildData(evt.Path(), newStat, nil))
 			}
 
 			var added bool
 			if tn.parent == nil {
 				// We're the singleton root.
-				added = NodeState(atomic.SwapInt32((*int32)(&tn.state),
-					int32(NodeStateLIVE))) != NodeStateLIVE
+				added = tn.state.Swap(NodeStateLIVE) != NodeStateLIVE
 			} else {
-				added = atomic.CompareAndSwapInt32((*int32)(&tn.state),
-					int32(NodeStatePENDING),
-					int32(NodeStateLIVE))
+				added = tn.state.CompareAndSwap(NodeStatePENDING, NodeStateLIVE)
 				if !added {
 					// Ordinary nodes are not allowed to transition from dead -> live;
 					// make sure this isn't a delayed response that came in after death.
-					if tn.state != NodeStateLIVE {
+					if tn.state.Load() != NodeStateLIVE {
 						return nil
 					}
 				}
