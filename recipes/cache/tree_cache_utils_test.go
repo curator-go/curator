@@ -354,19 +354,19 @@ func (ct *CacheTreeTester) AssertNotExist(path string) {
 
 // AssertEvent asserts an event's comming
 func (ct *CacheTreeTester) AssertEvent(expectedType TreeCacheEventType, expectedPath string) {
-	evt, found := ct.findEvent(expectedType, expectedPath, nil)
 	ct.RLock()
-	ct.t.Logf("AssertEvent: %s in %v", evt, ct.events)
+	ct.t.Logf("AssertEvent: [%s %s] in %v", expectedType, expectedPath, ct.events)
 	ct.RUnlock()
+	_, found := ct.findEvent(expectedType, expectedPath, nil)
 	Assert(ct.t, found)
 }
 
 // AssertEvent asserts an event's comming with given data
 func (ct *CacheTreeTester) AssertEventWithData(expectedType TreeCacheEventType, expectedPath string, expectedData string) {
-	evt, found := ct.findEvent(expectedType, expectedPath, []byte(expectedData))
 	ct.RLock()
-	ct.t.Logf("AssertEvent: %s in %v", evt, ct.events)
+	ct.t.Logf("AssertEvent: [%s %s %v] in %v", expectedType, expectedPath, expectedData, ct.events)
 	ct.RUnlock()
+	_, found := ct.findEvent(expectedType, expectedPath, []byte(expectedData))
 	Assert(ct.t, found)
 }
 
