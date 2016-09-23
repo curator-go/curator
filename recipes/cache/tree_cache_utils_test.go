@@ -255,9 +255,8 @@ func eventMatch(e TreeCacheEvent, expectedType TreeCacheEventType, expectedPath 
 
 // findEvent finds and pop an event from inner event set that fulfills the given condition
 func (ct *CacheTreeTester) findEvent(expectedType TreeCacheEventType, expectedPath string, expectedData []byte) (evt TreeCacheEvent, found bool) {
-	var now time.Time
 	deadline := time.Now().Add(assertEventTimeout)
-	for now.Before(deadline) {
+	for time.Now().Before(deadline) {
 		ct.Lock()
 		for i, e := range ct.events {
 			if !eventMatch(e, expectedType, expectedPath, expectedData) {
