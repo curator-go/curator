@@ -1,4 +1,4 @@
-package recipes
+package cache
 
 import (
 	"fmt"
@@ -9,33 +9,6 @@ import (
 	"github.com/curator-go/curator"
 	"github.com/samuel/go-zookeeper/zk"
 )
-
-type CacheEventType int
-
-const (
-	CHILD_ADDED            CacheEventType = iota // A child was added to the path
-	CHILD_UPDATED                                // A child's data was changed
-	CHILD_REMOVED                                // A child was removed from the path
-	CONNECTION_SUSPENDED                         // Called when the connection has changed to SUSPENDED
-	CONNECTION_RECONNECTED                       // Called when the connection has changed to RECONNECTED
-	CONNECTION_LOST                              // Called when the connection has changed to LOST
-	INITIALIZED                                  // Posted when PathChildrenCache.Start(StartMode) is called with POST_INITIALIZED_EVENT
-)
-
-type ChildData struct {
-	Path string
-	Stat *zk.Stat
-	Data []byte
-}
-
-type CacheEvent struct {
-	Type CacheEventType
-	Data ChildData
-}
-
-type PathChildrenCacheEvent CacheEvent
-
-type TreeCacheEvent CacheEvent
 
 type NodeCacheListener interface {
 	// Called when a change has occurred
@@ -48,18 +21,6 @@ type NodeCacheListenable interface {
 	AddListener(listener NodeCacheListener)
 
 	RemoveListener(listener NodeCacheListener)
-}
-
-// Listener for PathChildrenCache changes
-type PathChildrenCacheListener interface {
-	// Called when a change has occurred
-	ChildEvent(client curator.CuratorFramework, event PathChildrenCacheEvent) error
-}
-
-// Listener for TreeCache changes
-type TreeCacheListener interface {
-	// Called when a change has occurred
-	ChildEvent(client curator.CuratorFramework, event TreeCacheEvent) error
 }
 
 type NodeCacheListenerContainer struct {

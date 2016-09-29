@@ -194,7 +194,7 @@ type curatorFramework struct {
 func newCuratorFramework(b *CuratorFrameworkBuilder) *curatorFramework {
 	c := &curatorFramework{
 		listeners:               &curatorListenerContainer{},
-		unhandledErrorListeners: &unhandledErrorListenerContainer{},
+		unhandledErrorListeners: &UnhandledErrorListenerContainer{},
 		defaultData:             b.DefaultData,
 		retryPolicy:             b.RetryPolicy,
 		compressionProvider:     b.CompressionProvider,
@@ -259,55 +259,55 @@ func (c *curatorFramework) Started() bool {
 }
 
 func (c *curatorFramework) Create() CreateBuilder {
-	c.state.Check(STARTED, "instance must be started before calling this method")
+	c.state.Check(STARTED, "instance must be started before calling Create")
 
 	return &createBuilder{client: c, acling: acling{aclProvider: c.aclProvider}}
 }
 
 func (c *curatorFramework) Delete() DeleteBuilder {
-	c.state.Check(STARTED, "instance must be started before calling this method")
+	c.state.Check(STARTED, "instance must be started before calling Delete")
 
 	return &deleteBuilder{client: c, version: AnyVersion}
 }
 
 func (c *curatorFramework) CheckExists() CheckExistsBuilder {
-	c.state.Check(STARTED, "instance must be started before calling this method")
+	c.state.Check(STARTED, "instance must be started before calling CheckExists")
 
 	return &checkExistsBuilder{client: c}
 }
 
 func (c *curatorFramework) GetData() GetDataBuilder {
-	c.state.Check(STARTED, "instance must be started before calling this method")
+	c.state.Check(STARTED, "instance must be started before calling GetData")
 
 	return &getDataBuilder{client: c}
 }
 
 func (c *curatorFramework) SetData() SetDataBuilder {
-	c.state.Check(STARTED, "instance must be started before calling this method")
+	c.state.Check(STARTED, "instance must be started before calling SetData")
 
 	return &setDataBuilder{client: c, version: AnyVersion}
 }
 
 func (c *curatorFramework) GetChildren() GetChildrenBuilder {
-	c.state.Check(STARTED, "instance must be started before calling this method")
+	c.state.Check(STARTED, "instance must be started before calling GetChildren")
 
 	return &getChildrenBuilder{client: c}
 }
 
 func (c *curatorFramework) GetACL() GetACLBuilder {
-	c.state.Check(STARTED, "instance must be started before calling this method")
+	c.state.Check(STARTED, "instance must be started before calling GetACL")
 
 	return &getACLBuilder{client: c}
 }
 
 func (c *curatorFramework) SetACL() SetACLBuilder {
-	c.state.Check(STARTED, "instance must be started before calling this method")
+	c.state.Check(STARTED, "instance must be started before calling SetACL")
 
 	return &setACLBuilder{client: c, version: AnyVersion, acling: acling{aclProvider: c.aclProvider}}
 }
 
 func (c *curatorFramework) InTransaction() Transaction {
-	c.state.Check(STARTED, "instance must be started before calling this method")
+	c.state.Check(STARTED, "instance must be started before calling InTransaction")
 
 	return &curatorTransaction{client: c}
 }

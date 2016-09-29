@@ -48,18 +48,15 @@ func (l *curatorListenerStub) EventReceived(client CuratorFramework, event Curat
 	return l.callback(client, event)
 }
 
-type unhandledErrorListenerCallback func(err error)
+type unhandledErrorCallback func(error)
 
-type unhandledErrorListenerStub struct {
-	callback unhandledErrorListenerCallback
+func (cb unhandledErrorCallback) UnhandledError(err error) {
+	cb(err)
 }
 
-func NewUnhandledErrorListener(callback unhandledErrorListenerCallback) UnhandledErrorListener {
-	return &unhandledErrorListenerStub{callback}
-}
-
-func (l *unhandledErrorListenerStub) UnhandledError(err error) {
-	l.callback(err)
+// NewUnhandledErrorListener creates an UnhandledErrorListener with given callback
+func NewUnhandledErrorListener(callback func(error)) UnhandledErrorListener {
+	return unhandledErrorCallback(callback)
 }
 
 // Abstracts a listenable object
@@ -185,14 +182,14 @@ func (c *curatorListenerContainer) RemoveListener(listener CuratorListener) {
 	c.Remove(listener)
 }
 
-type unhandledErrorListenerContainer struct {
+type UnhandledErrorListenerContainer struct {
 	ListenerContainer
 }
 
-func (c *unhandledErrorListenerContainer) AddListener(listener UnhandledErrorListener) {
+func (c *UnhandledErrorListenerContainer) AddListener(listener UnhandledErrorListener) {
 	c.Add(listener)
 }
 
-func (c *unhandledErrorListenerContainer) RemoveListener(listener UnhandledErrorListener) {
+func (c *UnhandledErrorListenerContainer) RemoveListener(listener UnhandledErrorListener) {
 	c.Remove(listener)
 }

@@ -35,9 +35,9 @@ func TestHandleHolder(t *testing.T) {
 	// close and reset helper
 	assert.NoError(t, h.closeAndReset())
 
-	assert.NotNil(t, h.helper)
+	assert.NotNil(t, h.Helper())
 	assert.Equal(t, "", h.getConnectionString())
-	assert.IsType(t, (*zookeeperFactory)(nil), h.helper)
+	assert.IsType(t, (*zookeeperFactory)(nil), h.Helper())
 
 	// get and create connection
 	ensembleProvider.On("ConnectionString").Return("connStr").Once()
@@ -48,8 +48,8 @@ func TestHandleHolder(t *testing.T) {
 	assert.NotNil(t, conn)
 	assert.NoError(t, err)
 	assert.Equal(t, "connStr", h.getConnectionString())
-	assert.NotNil(t, h.helper)
-	assert.IsType(t, (*zookeeperCache)(nil), h.helper)
+	assert.NotNil(t, h.Helper())
+	assert.IsType(t, (*zookeeperCache)(nil), h.Helper())
 
 	// close connection
 	zookeeperConnection.On("Close").Return(nil).Once()
@@ -174,7 +174,7 @@ func (s *ConnectionStateTestSuite) TestConnectionTimeout() {
 	instanceIndex := s.state.InstanceIndex()
 
 	// force to connect timeout
-	s.state.connectionStart = time.Now().Add(-s.connectionTimeout * 2)
+	s.state.connectionStart.Store(time.Now().Add(-s.connectionTimeout * 2))
 
 	s.tracer.On("AddCount", "connections-timed-out", 1).Return().Once()
 
@@ -196,7 +196,7 @@ func (s *ConnectionStateTestSuite) TestSessionTimeout() {
 	instanceIndex := s.state.InstanceIndex()
 
 	// force to session timeout
-	s.state.connectionStart = time.Now().Add(-s.sessionTimeout * 2)
+	s.state.connectionStart.Store(time.Now().Add(-s.sessionTimeout * 2))
 
 	s.tracer.On("AddCount", "session-timed-out", 1).Return().Once()
 
@@ -273,7 +273,7 @@ func (s *ConnectionStateTestSuite) TestNewConnectionString() {
 	s.tracer.On("AddTime", "connection-state-parent-process", mock.AnythingOfType("Duration")).Return().Once()
 	s.tracer.On("AddCount", "connection-string-changed", 1).Return().Once()
 
-	s.state.zooKeeper.helper.(*zookeeperCache).connnectString = "anotherStr"
+	s.state.zooKeeper.Helper().(*zookeeperCache).connnectString = "anotherStr"
 
 	s.events <- zk.Event{
 		Type:  zk.EventSession,
