@@ -417,6 +417,7 @@ type connectionStateManager struct {
 	initialConnectMessageSent AtomicBool
 	events                    chan ConnectionState
 	QueueSize                 int
+	closed                    chan struct{}
 }
 
 func newConnectionStateManager(client CuratorFramework) *connectionStateManager {
@@ -433,6 +434,7 @@ func (m *connectionStateManager) Start() error {
 	}
 
 	m.events = make(chan ConnectionState, m.QueueSize)
+	m.closed = make(chan struct{})
 
 	go m.processEvents()
 
@@ -443,9 +445,7 @@ func (m *connectionStateManager) Close() {
 	if !m.state.Change(STARTED, STOPPED) {
 		return
 	}
-
-	close(m.events)
-
+	close(m.closed)
 	m.listeners.Clear()
 }
 
@@ -547,32 +547,29 @@ func (m *connectionStateManager) Connected() bool {
 }
 
 func (m *connectionStateManager) postState(state ConnectionState) {
-	defer func() {
-		recover() // channel closed
-	}()
-
 	for {
 		select {
+		case <-m.closed:
+			return
 		case m.events <- state:
 			return
 		default:
-		}
-
-		select {
-		case _, ok := <-m.events:
-			if !ok {
-				return // channel closed
-			}
-
-		default:
+			// Event queue is full - dropping events to make room.
+			<-m.events
 		}
 	}
 }
 
 func (m *connectionStateManager) processEvents() {
-	for newState := range m.events {
-		m.listeners.ForEach(func(listener interface{}) {
-			listener.(ConnectionStateListener).StateChanged(m.client, newState)
-		})
+	for {
+		select {
+		case <-m.closed:
+			return
+		case newState := <-m.events:
+			m.listeners.ForEach(func(listener interface{}) {
+				listener.(ConnectionStateListener).StateChanged(m.client, newState)
+			})
+		}
 	}
+
 }
