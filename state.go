@@ -510,33 +510,32 @@ func (m *connectionStateManager) BlockUntilConnected(maxWaitTime time.Duration) 
 		return nil
 	}
 
-	c := make(chan ConnectionState)
-
-	defer close(c)
+	isConnected := make(chan struct{})
 
 	listener := NewConnectionStateListener(func(client CuratorFramework, newState ConnectionState) {
 		if newState.Connected() {
-			c <- newState
+			close(isConnected)
 		}
 	})
-
 	m.listeners.AddListener(listener)
-
 	defer m.listeners.RemoveListener(listener)
 
-	if maxWaitTime > 0 {
-		timer := time.NewTimer(maxWaitTime)
-
-		select {
-		case <-c:
-			return nil
-		case <-timer.C:
-			return ErrTimeout
-		}
-	} else {
-		<-c
-
+	// Double-check that we are still not connected.
+	// To make sure we didn't miss the event while adding listener.
+	if m.currentConnectionState.Connected() {
 		return nil
+	}
+
+	if maxWaitTime == 0 {
+		<-isConnected
+		return nil
+	}
+
+	select {
+	case <-isConnected:
+		return nil
+	case <-time.After(maxWaitTime):
+		return ErrTimeout
 	}
 }
 
