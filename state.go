@@ -231,7 +231,9 @@ func (s *connectionState) reset() error {
 
 	s.isConnected.Set(false)
 
-	s.zooKeeper.closeAndReset()
+	if err := s.zooKeeper.closeAndReset(); err != nil {
+		return err
+	}
 
 	_, err := s.zooKeeper.getZookeeperConnection() // initiate connection
 
