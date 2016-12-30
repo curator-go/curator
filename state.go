@@ -571,13 +571,9 @@ func (m *connectionStateManager) postState(state ConnectionState) {
 }
 
 func (m *connectionStateManager) processEvents() {
-	for {
-		if newState, ok := <-m.events; !ok {
-			return // queue closed
-		} else {
-			m.listeners.ForEach(func(listener interface{}) {
-				listener.(ConnectionStateListener).StateChanged(m.client, newState)
-			})
-		}
+	for newState := range m.events {
+		m.listeners.ForEach(func(listener interface{}) {
+			listener.(ConnectionStateListener).StateChanged(m.client, newState)
+		})
 	}
 }
