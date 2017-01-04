@@ -286,13 +286,16 @@ func (s *connectionState) process(event *zk.Event) {
 	//log.Printf("connectionState.process received %v with %d watchers", event, s.parentWatchers.Len())
 
 	for _, watcher := range s.parentWatchers.watchers {
-		go func() {
+		if watcher == nil {
+			continue
+		}
+		go func(w Watcher) {
 			tracer := newTimeTracer("connection-state-parent-process", s.tracer)
 
 			defer tracer.Commit()
 
-			watcher.process(event)
-		}()
+			w.process(event)
+		}(watcher)
 	}
 
 	if event.Type == zk.EventSession {
