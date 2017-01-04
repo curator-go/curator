@@ -515,11 +515,13 @@ func (m *connectionStateManager) BlockUntilConnected(maxWaitTime time.Duration) 
 		return nil
 	}
 
-	isConnected := make(chan struct{})
-
+	var isConnected = make(chan struct{}, 1)
 	listener := NewConnectionStateListener(func(client CuratorFramework, newState ConnectionState) {
 		if newState.Connected() {
-			close(isConnected)
+			select {
+			case isConnected <- struct{}{}:
+			default:
+			}
 		}
 	})
 	m.listeners.AddListener(listener)
