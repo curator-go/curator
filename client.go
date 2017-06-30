@@ -219,33 +219,35 @@ func (c *curatorZookeeperClient) BlockUntilConnectedOrTimedOut() error {
 
 	defer tracer.Commit()
 
-	if err := c.internalBlockUntilConnectedOrTimedOut(); err != nil {
-		return err
-	}
+	return c.internalBlockUntilConnectedOrTimedOut()
+}
 
+func (c *curatorZookeeperClient) internalBlockUntilConnectedOrTimedOut() error {
 	if c.state.Connected() {
 		return nil
 	}
 
-	return ErrTimeout
-}
-
-func (c *curatorZookeeperClient) internalBlockUntilConnectedOrTimedOut() error {
-	timer := time.NewTimer(c.state.connectionTimeout)
-	ch := make(chan error)
-
-	watcher := c.state.AddParentWatcher(NewWatcher(func(*zk.Event) {
+	var isConnected = make(chan struct{}, 1)
+	watcher := c.state.AddParentWatcher(NewWatcher(func(e *zk.Event) {
 		if c.state.Connected() {
-			ch <- nil
+			select {
+			case isConnected <- struct{}{}:
+			default:
+			}
 		}
 	}))
-
 	defer c.state.RemoveParentWatcher(watcher)
 
-	select {
-	case <-ch:
+	// Double-check that we are still not connected.
+	// To make sure we didn't miss the event while adding watcher.
+	if c.state.Connected() {
 		return nil
-	case <-timer.C:
+	}
+
+	select {
+	case <-isConnected:
+		return nil
+	case <-time.After(c.state.connectionTimeout):
 		return ErrTimeout
 	}
 }

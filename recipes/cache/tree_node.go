@@ -262,7 +262,7 @@ func (tn *TreeNode) processResult(client curator.CuratorFramework, evt curator.C
 				}
 			}
 		default:
-			tn.tree.logger.Printf("Unknown GET_DATA event: %v", evt)
+			tn.tree.logger.Printf("Unknown GET_DATA event[%v]: %s", evt.Path(), evt.Err())
 		}
 	default:
 		// An unknown event, probably an error of some sort like connection loss.

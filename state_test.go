@@ -533,3 +533,34 @@ func (s *ConnectionStateManagerTestSuite) TestBlockUntilConnectedTimeouted() {
 
 	assert.Equal(s.T(), UNKNOWN, s.state.currentConnectionState)
 }
+
+func assertEvent(t *testing.T, e *zk.Event, ch chan *zk.Event, timeout time.Duration) {
+	select {
+	case <-time.After(timeout):
+		t.Fatal("Waiting for event timed out: ", e)
+	case evt := <-ch:
+		assert.Equal(t, e, evt)
+	}
+}
+
+func createTestingWatcher() (chan *zk.Event, Watcher) {
+	var ch = make(chan *zk.Event)
+	var watcher = NewWatcher(func(event *zk.Event) {
+		ch <- event
+	})
+	return ch, watcher
+}
+
+func TestProcessingMultipleWatchers(t *testing.T) {
+	var ch1, w1 = createTestingWatcher()
+	var ch2, w2 = createTestingWatcher()
+	var evt = &zk.Event{Type: zk.EventSession}
+	var state = newConnectionState(nil, nil, time.Second, time.Second, nil, newDefaultTracerDriver(), false)
+
+	state.AddParentWatcher(w1)
+	state.AddParentWatcher(w2)
+	state.process(evt)
+
+	assertEvent(t, evt, ch1, time.Second)
+	assertEvent(t, evt, ch2, time.Second)
+}

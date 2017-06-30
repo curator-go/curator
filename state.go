@@ -231,7 +231,9 @@ func (s *connectionState) reset() error {
 
 	s.isConnected.Set(false)
 
-	s.zooKeeper.closeAndReset()
+	if err := s.zooKeeper.closeAndReset(); err != nil {
+		return err
+	}
 
 	_, err := s.zooKeeper.getZookeeperConnection() // initiate connection
 
@@ -284,13 +286,16 @@ func (s *connectionState) process(event *zk.Event) {
 	//log.Printf("connectionState.process received %v with %d watchers", event, s.parentWatchers.Len())
 
 	for _, watcher := range s.parentWatchers.watchers {
-		go func() {
+		if watcher == nil {
+			continue
+		}
+		go func(w Watcher) {
 			tracer := newTimeTracer("connection-state-parent-process", s.tracer)
 
 			defer tracer.Commit()
 
-			watcher.process(event)
-		}()
+			w.process(event)
+		}(watcher)
 	}
 
 	if event.Type == zk.EventSession {
@@ -417,6 +422,7 @@ type connectionStateManager struct {
 	initialConnectMessageSent AtomicBool
 	events                    chan ConnectionState
 	QueueSize                 int
+	closed                    chan struct{}
 }
 
 func newConnectionStateManager(client CuratorFramework) *connectionStateManager {
@@ -433,6 +439,7 @@ func (m *connectionStateManager) Start() error {
 	}
 
 	m.events = make(chan ConnectionState, m.QueueSize)
+	m.closed = make(chan struct{})
 
 	go m.processEvents()
 
@@ -443,9 +450,7 @@ func (m *connectionStateManager) Close() {
 	if !m.state.Change(STARTED, STOPPED) {
 		return
 	}
-
-	close(m.events)
-
+	close(m.closed)
 	m.listeners.Clear()
 }
 
@@ -510,33 +515,34 @@ func (m *connectionStateManager) BlockUntilConnected(maxWaitTime time.Duration) 
 		return nil
 	}
 
-	c := make(chan ConnectionState)
-
-	defer close(c)
-
+	var isConnected = make(chan struct{}, 1)
 	listener := NewConnectionStateListener(func(client CuratorFramework, newState ConnectionState) {
 		if newState.Connected() {
-			c <- newState
+			select {
+			case isConnected <- struct{}{}:
+			default:
+			}
 		}
 	})
-
 	m.listeners.AddListener(listener)
-
 	defer m.listeners.RemoveListener(listener)
 
-	if maxWaitTime > 0 {
-		timer := time.NewTimer(maxWaitTime)
-
-		select {
-		case <-c:
-			return nil
-		case <-timer.C:
-			return ErrTimeout
-		}
-	} else {
-		<-c
-
+	// Double-check that we are still not connected.
+	// To make sure we didn't miss the event while adding listener.
+	if m.currentConnectionState.Connected() {
 		return nil
+	}
+
+	if maxWaitTime == 0 {
+		<-isConnected
+		return nil
+	}
+
+	select {
+	case <-isConnected:
+		return nil
+	case <-time.After(maxWaitTime):
+		return ErrTimeout
 	}
 }
 
@@ -548,36 +554,29 @@ func (m *connectionStateManager) Connected() bool {
 }
 
 func (m *connectionStateManager) postState(state ConnectionState) {
-	defer func() {
-		recover() // channel closed
-	}()
-
 	for {
 		select {
+		case <-m.closed:
+			return
 		case m.events <- state:
 			return
 		default:
-		}
-
-		select {
-		case _, ok := <-m.events:
-			if !ok {
-				return // channel closed
-			}
-
-		default:
+			// Event queue is full - dropping events to make room.
+			<-m.events
 		}
 	}
 }
 
 func (m *connectionStateManager) processEvents() {
 	for {
-		if newState, ok := <-m.events; !ok {
-			return // queue closed
-		} else {
+		select {
+		case <-m.closed:
+			return
+		case newState := <-m.events:
 			m.listeners.ForEach(func(listener interface{}) {
 				listener.(ConnectionStateListener).StateChanged(m.client, newState)
 			})
 		}
 	}
+
 }
