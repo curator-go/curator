@@ -278,7 +278,9 @@ func (l *lockInternals) internalLockLoop(startTime time.Time, waitTime time.Dura
 
 				c := make(chan error)
 
-				t := time.NewTimer(waitTime - time.Now().Sub(startTime))
+				now := time.Now()
+				t := time.NewTimer(waitTime - now.Sub(startTime))
+				startTime = now
 
 				l.client.GetData().UsingWatcher(curator.NewWatcher(func(event *zk.Event) {
 					c <- event.Err
