@@ -1,3 +1,7 @@
+# Repository is no longer maintained.
+
+We've moved away from Zookeeper and no longer have this project running in our codebase. No community has been established and too many issues have not been resolved in this project. Therefore we have decided to archive this project. We'll keep it on this location for those wanting it as reference but that's it.
+
 # What is Curator?
 
 Curator n ˈkyoor͝ˌātər: a keeper or custodian of a museum or other collection - A ZooKeeper Keeper.
